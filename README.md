@@ -99,6 +99,6 @@ Each port follows one function in one commit: Reef at `9d2b7ffca`, Grade Lab at 
 
 - [henryhcooperr profile](https://github.com/henryhcooperr)
 - [reef](https://github.com/henryhcooperr/reef)
-- [reef-grade-lab](https://github.com/henryhcooperr/reef-grade-lab)
+- [grade-lab](https://github.com/henryhcooperr/grade-lab)
 - [reef-social-lab](https://github.com/henryhcooperr/reef-social-lab)
 - [coopr](https://github.com/henryhcooperr/coopr)
