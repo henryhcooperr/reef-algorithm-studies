@@ -1,21 +1,60 @@
-# Reef algorithm studies
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="assets/banner-dark.svg">
+  <img alt="Algorithm studies. The math, without the agents." src="assets/banner-light.svg" width="100%">
+</picture>
 
-**Six pieces of math from Reef, Grade Lab and Social Lab, written up to show how changing an input changes the decision.** The products are private. These studies aren't. Each figure comes from a JavaScript port of the real function with its real constants. The inputs are samples I made to show one behavior clearly, so none of the numbers below are measurements unless the text says so.
+Eight pieces of math from software I built, written up to show how changing an input changes the result. Six come from [Reef](https://github.com/henryhcooperr/reef) (a Mac app for dive footage), [Grade Lab](https://github.com/henryhcooperr/grade-lab) (an agent that color grades in DaVinci Resolve) and [Social Lab](https://github.com/henryhcooperr/reef-social-lab) (research on public posts). Two come from my kelp forest game: curl noise that moves a school of fish, and a soft bend limit for a sea lion's spine.
 
-- [Pushing water cyan without touching the fish](#pushing-water-cyan-without-touching-the-fish), from Grade Lab's look node
-- [Starting from a grade I already liked](#starting-from-a-grade-i-already-liked), from Grade Lab's case memory
-- [Where a moment starts and stops](#where-a-moment-starts-and-stops), from Reef's moment finder
-- [Giving color back with distance](#giving-color-back-with-distance), from Grade Lab's Sea-thru Fuse
-- [Undoing one edit and keeping the rest](#undoing-one-edit-and-keeping-the-rest), from Reef's timeline history
-- [Calling a post a breakout](#calling-a-post-a-breakout), from Social Lab's scoring
+**[Case study and the film](https://work.henrycooper.dev/work/algorithm-studies/)** · [Portfolio](https://work.henrycooper.dev) · [All my work](https://github.com/henryhcooperr)
+
+The products' code is private; these write-ups are public. Each figure comes from a JavaScript port of the real function with its real constants. The inputs are samples I made to show one behavior clearly, so none of the numbers are measurements unless the text says so.
+
+1. [Moving a school without piling it up](#moving-a-school-without-piling-it-up), from the kelp forest game
+2. [A spine that bends without kinks](#a-spine-that-bends-without-kinks), from the kelp forest game
+3. [Giving color back with distance](#giving-color-back-with-distance), from Grade Lab's Sea-thru Fuse
+4. [Pushing water cyan without touching the fish](#pushing-water-cyan-without-touching-the-fish), from Grade Lab's look node
+5. [Starting from a grade I already liked](#starting-from-a-grade-i-already-liked), from Grade Lab's case memory
+6. [Where a moment starts and stops](#where-a-moment-starts-and-stops), from Reef's moment finder
+7. [Undoing one edit and keeping the rest](#undoing-one-edit-and-keeping-the-rest), from Reef's timeline history
+8. [Calling a post a breakout](#calling-a-post-a-breakout), from Social Lab's scoring
+
+## Moving a school without piling it up
+
+The school in my kelp forest game is 4,096 fish on a desktop and 1,536 on a phone. On each of the game's six beats the school gathers into a set shape, and between beats it pours along curl noise: each fish's velocity is the curl of a field built from three sine waves at different scales. A curl has no divergence, so the flow can't pile fish into one spot or thin them out in another, and no fish has to look at its neighbors.
+
+Where every fish should be on each beat is baked into one 64 × 384 RGBA32F texture, one texel per fish per beat, and the GPU reads it per fish. Each fish's sway starts at its index times 0.618 of a turn, so neighbors never sway in step.
+
+<img src="assets/study-fish.webp" alt="A school of fish holding a shape and pouring along a curl-noise field to the next one." width="100%">
+
+<sub><b>Captured from the site's live figure.</b> It runs <code>curl3</code> copied from the kelp forest game, with the same constants.</sub>
+
+## A spine that bends without kinks
+
+The sea lion in my kelp forest game keeps a trail of where its chest has been, measured by distance traveled. Each spine bone turns to the trail's direction at that bone's own distance behind the chest, so a turn curves the whole body and a climb ripples back to the tail.
+
+Each bone has a bend limit. Mine passes the angle through unchanged up to 70% of the limit, then eases toward the limit without reaching it, with no jump in the angle or its slope. A bone near its limit passes the rest of the turn to the next one, so a hard turn bends the back, hips and tail into one even crescent.
+
+<img src="assets/study-spine.webp" alt="A sea lion's spine following a trail, with each bone bending up to a soft limit." width="100%">
+
+<sub><b>Captured from the site's live figure.</b> It runs <code>softCap</code> copied from the kelp forest game, with the same constants.</sub>
+
+## Giving color back with distance
+
+Water takes red away with distance and lays a blue-green veil over everything. Grade Lab undoes that in a Fusion Fuse I wrote, ReefSeaThru, which reads distance from Resolve's own Depth Map.
+
+Version 2 restored color everywhere. On cut 30, a shot from one of my dives, I said "i guess it does become pink tho and the divers leg does look worse." Closer in than the nearest point where the Fuse can measure the veil, there's almost no water to take out, so v2 was subtracting a veil that wasn't there. Version 3 fades the restoration out over that last stretch, down to none on the nearest thing in the frame.
+
+<img src="assets/study-seathru.webp" alt="A Fuse inspector beside color patches restored with distance, stepping strength and switching between v2 and v3." width="100%">
+
+<sub><b>Rebuild, sample patches.</b> Resolve's Fusion page rebuilt, not a screen capture. The patch colors and the fit are samples; the restoration is a port of the Fuse's v3 kernel with its real limits: veil at most 0.6, gain at most 2×, color shift at most 1.4×.</sub>
 
 ## Pushing water cyan without touching the fish
 
-A global hue shift turns the water cyan and the garibaldi green with it. Grade Lab's look node decides per pixel instead. It measures how blue a pixel is relative to its brightest channel, `(b − r) / peak`. Pixels with enough blue evidence get the water shift, pixels with the opposite evidence get the warm shift, and a tonal window leaves crushed shadows and clipped highlights alone. Then it rescales each pixel back to the luminance it started with, so the shift changes hue and not exposure.
+A global hue shift turns the water cyan and the garibaldi green with it. Grade Lab's look node decides per pixel instead. It measures how blue a pixel is relative to its brightest channel, `(b − r) / peak`. Pixels with enough blue evidence get the water shift, pixels with the opposite evidence get the warm shift, and each pixel is rescaled to the luminance it started with, so the shift changes hue and not exposure.
 
-<p align="center"><img src="assets/01-pushing-water-cyan-without-touching-the-.gif" width="880" alt="The six colors are averaged from patches of one of my Catalina kelp frames, as displayed, then decoded to linear light with the Rec.709 curve. The figure runs only exposure and the selective step. The real node also appl"></p>
+<img src="assets/study-water.webp" alt="A table of color swatches before and after the water shift, with luminance unchanged." width="100%">
 
-<sub>The six colors are averaged from patches of one of my Catalina kelp frames, as displayed, then decoded to linear light with the Rec.709 curve. The figure runs only exposure and the selective step. The real node also applies white balance, contrast, saturation and the log shoulder, and every recipe is constant per shot.</sub>
+<sub><b>Rebuild.</b> The six colors are averaged from patches of one of my kelp frames. The figure runs only exposure and the selective step.</sub>
 
 ```python
 def _selective_color(rgb, water_cyan, subject_warmth):
@@ -30,49 +69,39 @@ def _selective_color(rgb, water_cyan, subject_warmth):
     return shifted * (L / luminance(shifted))   # same brightness, new hue
 ```
 
-<sub>Condensed from <code>color.py</code> in reef-grade-lab. <code>ss</code> is smoothstep: a = clip((v − lo) / (hi − lo)), then a²(3 − 2a).</sub>
+<sub>Condensed from Grade Lab's color code. <code>ss</code> is smoothstep: a = clip((v − lo) / (hi − lo)), then a²(3 − 2a).</sub>
 
 ## Starting from a grade I already liked
 
-Grade Lab doesn't average my past grades. For a new shot, it measures a fingerprint of 17 numbers: luminance percentiles, saturation, haze, how much of the frame is water and what hue it is, warm share, structure, and the red/blue and green/blue ratios. Each number is z-scored across the library. The distance `d` to an old shot is the root mean square of the differences. Every verdict I give is stored with its date, and a version's outcome is the sum of its verdicts' signs times their weights, halved for every 21 days since my newest verdict. Of the five nearest shots, the seed is the praised one with the best `e−d · (1 + max(0, outcome))`.
+Grade Lab doesn't average my past grades. For a new shot it measures 17 numbers from the camera signal as a fingerprint, z-scores each across the library, and takes the root mean square of the differences as the distance `d` to an old shot. Each past version also has an outcome, a score drawn from my verdicts on it, and it halves for every 21 days since my newest verdict. Of the five nearest shots, the seed is the praised one with the best `e^(−d) · (1 + max(0, outcome))`.
 
-The table uses the real case rows for cut 32. The loop pushes my next verdict later and later to show what happens to them.
+<img src="assets/study-memory.webp" alt="A table of past grades with a verdict decaying over time, so the lift from my praise shrinks." width="100%">
 
-<p align="center"><img src="assets/02-starting-from-a-grade-i-already-liked.gif" width="880" alt="Starting from a grade I already liked"></p>
-
-**Seed:** cut 30, Sea-thru surface fix, score 0.9436. My praise now counts for 100% of what it did.
-
-<sub>Grey is similarity, e−d. Teal is the lift from my praise. Cut 31's best version is an anti-case, so its negative outcome never lowers its score; Grade Lab returns it on a separate list of grades to avoid. The rows are the real ones from the cut 32 replay, with cut 32's own feedback excluded. The later dates are hypothetical.</sub>
+<sub><b>Rebuild.</b> The rows are real: the pick for cut 32, replayed with cut 32's own feedback left out. The later dates are hypothetical.</sub>
 
 ## Where a moment starts and stops
 
-Reef's moment finder scores every quarter second for how usable it is: `0.4·sharp + 0.6·subject + 0.15·residual − 0.5·whip`, where whip is camera motion times blur. A single threshold on that curve breaks one shot into fragments. The seal turns away for a second, or I flip the camera to follow it, and one moment becomes three. So a run starts at 0.35 and keeps going until it falls below 0.22. Runs less than 2 seconds apart merge, and anything shorter than 2 seconds after merging is dropped. Those values were set on my own dive clips.
+Reef's moment finder scores every quarter second for how usable it is: `0.4·sharp + 0.6·subject + 0.15·residual − 0.5·whip`, where whip is camera motion times blur. A single threshold on that curve breaks one shot into fragments, so a run starts at 0.35 and keeps going until it falls below 0.22. Runs less than 2 seconds apart merge, and anything shorter than 2 seconds after merging is dropped. Those values were set on my own dive clips.
 
-<p align="center"><img src="assets/03-where-a-moment-starts-and-stops.gif" width="880" alt="A rebuild in Reef's design system, not a screen capture. The signals are a sample shaped like a seal clip with a camera flip at 8 s. The rule is a port of usable_runs from moment/segment.py. Drag across the timeline to r"></p>
+<img src="assets/study-moment.webp" alt="A usability curve with thresholds at 0.35 and 0.22, switching between one threshold and Reef's rule." width="100%">
 
-<sub>A rebuild in Reef's design system, not a screen capture. The signals are a sample shaped like a seal clip with a camera flip at 8 s. The rule is a port of <code>usable_runs</code> from <code>moment/segment.py</code>.</sub>
-
-## Giving color back with distance
-
-Water takes red away with distance and lays a blue-green veil over everything. Grade Lab undoes that in a Fusion Fuse I wrote, ReefSeaThru, which runs on the camera's log footage before the grade. It reads distance from Resolve's own Depth Map, where brighter means nearer. For each shot it fits the veil color, how fast the veil builds, how fast each channel fades, and the distance of the nearest veil reading. Then it removes the veil and gives each channel back its loss, with the gain capped at 2×.
-
-Version 2 did that everywhere. On cut 30 I said "i guess it does become pink tho and the divers leg does look worse." Nearer than the nearest veil reading, there's almost no water to take out, so v2 was subtracting a veil that wasn't there. Version 3 fades the restoration out along that path, down to none at the nearest thing, and holds back highlights so they don't brighten past clipping.
-
-<p align="center"><img src="assets/04-giving-color-back-with-distance.gif" width="880" alt="A rebuild of Resolve's Fusion page, not a screen capture. The patch colors and the fit are samples, made with the textbook model I = J·e−βz + B(1 − e−βz). The restoration itself is a port of the Fuse's v3 kernel, with it"></p>
-
-<sub>A rebuild of Resolve's Fusion page, not a screen capture. The patch colors and the fit are samples, made with the textbook model I = J·e−βz + B(1 − e−βz). The restoration itself is a port of the Fuse's v3 kernel, with its real limits: veil at most 0.6, gain at most 2×, color shift at most 1.4×. Distance is in the depth map's relative units, not meters. Both rows go through the same fixed preview transform.</sub>
+<sub><b>Rebuild.</b> The signals are a sample shaped like a seal clip with a camera flip at 8 s.</sub>
 
 ## Undoing one edit and keeping the rest
 
-An undo stack can't do this. The agent trims a shot. Then I change its speed. Now I want the agent's trim gone and my speed kept. Reef's `history.revert` undoes the changes one revision made and keeps every later change to other fields. It writes a new revision instead of rewriting old ones. It refuses if any field it would undo was changed again later, and it says who changed it. A revert applies whole or not at all, and an agent can only revert agent revisions.
+The agent trims a shot. Then I change its speed. Now I want the agent's trim gone and my speed kept. Reef's `history.revert` undoes the changes one revision made and keeps every later change to other fields. It writes a new revision instead of rewriting old ones, refuses if a field it would undo was changed again later, and says who changed it. An agent can only revert agent revisions.
 
-<p align="center"><img src="assets/05-undoing-one-edit-and-keeping-the-rest.png" width="880" alt="A rebuild in Reef's design system, with a sample clip. The refusal's code, message and next step are the engine's own wording, from revise_ops/history.py. A revert is itself a revision, so it can be reverted too."></p>
+<img src="assets/study-revert.webp" alt="A revision history from r1 to r3 on a sample clip, with a refused revert." width="100%">
 
-<sub>A rebuild in Reef's design system, with a sample clip. The refusal's code, message and next step are the engine's own wording, from <code>revise_ops/history.py</code>. A revert is itself a revision, so it can be reverted too.</sub>
+<sub><b>Rebuild, sample clip.</b> The refusal's code, message and next step are the engine's own wording.</sub>
 
 ## Calling a post a breakout
 
-A million views means nothing for a creator who averages two million. Social Lab only calls a post a breakout when it beats the creator's own feed on three measures at once, and it won't score a creator with fewer than ten other posts.
+A million views means nothing for a creator who averages two million. Social Lab only calls a post a breakout when it beats the creator's own feed on three measures at once: lift of at least 3, robust z of at least 2 and cautious lift of at least 2. It won't score a creator with fewer than ten other posts.
+
+<p align="center"><img src="assets/study-score.webp" alt="Sample creators A and B scored on a log scale, with the post being scored marked against the median." width="86%"></p>
+
+<p align="center"><sub><b>Sample data.</b> Both feeds are synthetic, and the scoring is a port of the real scorer.</sub></p>
 
 | Measure | Defined as | Why |
 | --- | --- | --- |
@@ -80,25 +109,12 @@ A million views means nothing for a creator who averages two million. Social Lab
 | **Robust z** | (ln plays − median ln plays) ÷ (1.4826 × MAD) | Views are heavy-tailed, so it works in logs and uses the median absolute deviation, scaled to match a standard deviation. |
 | **Cautious lift** | plays ÷ the 95th percentile of 2,000 bootstrapped medians | A lower bound: the lift still holds if the creator's usual turns out to be higher than it looks. |
 
-| Label | Rule |
-| --- | --- |
-| `SPARSE_UNSCORED` | Fewer than 10 other posts |
-| `BREAKOUT` | Lift ≥ 3, robust z ≥ 2 and cautious lift ≥ 2 |
-| `EXTREME` | A breakout with lift ≥ 10 |
-| `TYPICAL` | Lift from 0.67 to 1.5 |
-| `UNDER` | Lift ≤ 0.5 |
-| `BETWEEN` | Everything else |
+## The house rule
 
-The [reef-social-lab](https://github.com/henryhcooperr/reef-social-lab) page shows the calculator at work.
+Each port was made from one function at one private commit: Reef at `9d2b7ffca`, Grade Lab at `62d3d87`. The film at the top of the case study runs `curl3` and `softCap` copied from the kelp forest game. When a port and its source disagree, the source is right and the port is a bug. If a figure looks wrong, please open an issue.
 
-## Notes
+The figures run only the step they study. The real functions do more.
 
-Each port follows one function in one commit: Reef at `9d2b7ffca`, Grade Lab at `62d3d87`. The derivations, the parts left out, and where each constant came from are in `notes/`. When a port and its source disagree, the source is right and the port is a bug. Please open an issue.
+---
 
-## Related
-
-- [henryhcooperr profile](https://github.com/henryhcooperr)
-- [reef](https://github.com/henryhcooperr/reef)
-- [grade-lab](https://github.com/henryhcooperr/grade-lab)
-- [reef-social-lab](https://github.com/henryhcooperr/reef-social-lab)
-- [coopr](https://github.com/henryhcooperr/coopr)
+More: [Reef](https://github.com/henryhcooperr/reef) · [Grade Lab](https://github.com/henryhcooperr/grade-lab) · [Social Lab](https://github.com/henryhcooperr/reef-social-lab) · [Coopr](https://github.com/henryhcooperr/coopr) · [Portfolio](https://work.henrycooper.dev)
